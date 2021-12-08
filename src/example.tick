@@ -1,0 +1,8 @@
+dbrp "telegraf"."autogen"
+
+stream
+    |from()
+        .measurement('cpu')
+    @mirror()
+    |alert()
+        .crit(lambda: "usage_idle" < 30)
