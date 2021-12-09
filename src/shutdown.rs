@@ -1,4 +1,4 @@
-use tokio::sync::broadcast;
+use tokio::sync::{broadcast, mpsc};
 
 /// A struct to listen to shutdown signals through tokio's `brodcast::Receiver`.
 /// This struct also provided a way for the user to know whether the shutdown
@@ -6,14 +6,17 @@ use tokio::sync::broadcast;
 pub struct Shutdown {
     shutdown_rx: broadcast::Receiver<()>,
 
-    is_shutdown: bool
+    is_shutdown: bool,
+
+    _complete: mpsc::Sender<()>,
 }
 
 impl Shutdown {
-    pub fn new(shutdown_rx: broadcast::Receiver<()>) -> Shutdown {
+    pub fn new(shutdown_rx: broadcast::Receiver<()>, _complete: mpsc::Sender<()>) -> Shutdown {
         Shutdown {
             shutdown_rx,
-            is_shutdown: false
+            is_shutdown: false,
+            _complete
         }
     }
 

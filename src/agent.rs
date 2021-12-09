@@ -21,6 +21,7 @@ pub struct Agent {
 impl Agent {
     pub fn new(stream: UnixStream, handler: Box<dyn Handler>, shutdown: Shutdown) -> Agent {
         let connection = Connection::new(stream);
+
         let (points_tx, points_rx) = mpsc::channel(128);
 
         Agent {
@@ -94,8 +95,11 @@ impl Agent {
             }
         }
 
-        // TODO: We should drain the points_rx channel here and signal completion before
-        // exiting
+        // Drain the points channel and send any outstanding point before exiting
+        while let Ok(response) = self.points_rx.try_recv().map(response::Message::Point) {
+            self.connection.send_response(&response).await?;
+        }
+
         Ok(())
     }
 }
