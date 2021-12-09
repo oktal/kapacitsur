@@ -19,17 +19,17 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub trait Handler: Send {
     fn info(&self) -> Result<udf::InfoResponse>;
 
-    fn init(&mut self, req: &udf::InitRequest) -> Result<udf::InitResponse>;
+    fn init(&mut self, req: udf::InitRequest) -> Result<udf::InitResponse>;
 
-    fn snapshot(&mut self, req: &udf::SnapshotRequest) -> Result<udf::SnapshotResponse>;
+    fn snapshot(&mut self, req: udf::SnapshotRequest) -> Result<udf::SnapshotResponse>;
 
-    fn restore(&mut self, req: &udf::RestoreRequest) -> Result<udf::RestoreResponse>;
+    fn restore(&mut self, req: udf::RestoreRequest) -> Result<udf::RestoreResponse>;
 
-    fn begin_batch(&mut self, req: &udf::BeginBatch) -> Result<()>;
+    fn begin_batch(&mut self, req: udf::BeginBatch) -> Result<()>;
 
-    fn point(&mut self, req: &udf::Point, sender: mpsc::Sender<udf::Point>) -> Result<()>;
+    fn point(&mut self, point: udf::Point, sender: mpsc::Sender<udf::Point>) -> Result<()>;
 
-    fn end_batch(&mut self, req: &udf::EndBatch) -> Result<()>;
+    fn end_batch(&mut self, req: udf::EndBatch) -> Result<()>;
 }
 
 pub trait Acceptor {

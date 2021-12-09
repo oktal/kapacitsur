@@ -35,10 +35,10 @@ impl Agent {
         }
     }
 
-    fn handle_request(&mut self, request: &udf::Request) -> Result<Option<response::Message>> {
+    fn handle_request(&mut self, request: udf::Request) -> Result<Option<response::Message>> {
         println!("Received {:?}", &request);
 
-        if let Some(message) = &request.message {
+        if let Some(message) = request.message {
             match message {
                 request::Message::Info(_) => {
                     let info = self.handler.info()?;
@@ -84,7 +84,7 @@ impl Agent {
     pub(crate) async fn run(&mut self) -> Result<()> {
         while !self.shutdown.is_shutdown() {
             let response = tokio::select! {
-                request = self.connection.read_message() => self.handle_request(&request?)?,
+                request = self.connection.read_message() => self.handle_request(request?)?,
                 point = self.points_rx.recv() => point.map(response::Message::Point),
                 _ = self.shutdown.recv() =>  { None }
 

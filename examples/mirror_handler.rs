@@ -26,7 +26,7 @@ impl Handler for MirrorHandler {
         })
     }
 
-    fn init(&mut self, req: &udf::InitRequest) -> Result<udf::InitResponse> {
+    fn init(&mut self, req: udf::InitRequest) -> Result<udf::InitResponse> {
         let field = req
             .options
             .iter()
@@ -62,20 +62,19 @@ impl Handler for MirrorHandler {
         })
     }
 
-    fn snapshot(&mut self, _req: &udf::SnapshotRequest) -> Result<udf::SnapshotResponse> {
+    fn snapshot(&mut self, _req: udf::SnapshotRequest) -> Result<udf::SnapshotResponse> {
         Ok(udf::SnapshotResponse{snapshot: Vec::new()})
     }
 
-    fn restore(&mut self, _req: &udf::RestoreRequest) -> Result<udf::RestoreResponse> {
+    fn restore(&mut self, _req: udf::RestoreRequest) -> Result<udf::RestoreResponse> {
         Ok(udf::RestoreResponse{success:true, error: String::new()})
     }
 
-    fn begin_batch(&mut self, _req: &udf::BeginBatch) -> Result<udf::BeginBatch> {
+    fn begin_batch(&mut self, _req: udf::BeginBatch) -> Result<()> {
         unimplemented!();
     }
 
-    fn point(&mut self, req: &udf::Point, sender: tokio::sync::mpsc::Sender<udf::Point>) -> Result<()> {
-        let mut point = req.clone();
+    fn point(&mut self, mut point: udf::Point, sender: tokio::sync::mpsc::Sender<udf::Point>) -> Result<()> {
         if let Some(val) = point.fields_double.get_mut(&self.name) {
             *val = self.value;
         } else {
@@ -86,7 +85,7 @@ impl Handler for MirrorHandler {
         Ok(())
     }
 
-    fn end_batch(&mut self, _req: &udf::EndBatch) -> Result<()> {
+    fn end_batch(&mut self, _req: udf::EndBatch) -> Result<()> {
         unimplemented!();
     }
 }
