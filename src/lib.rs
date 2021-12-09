@@ -25,7 +25,7 @@ pub trait Handler: Send {
 
     fn restore(&mut self, req: &udf::RestoreRequest) -> Result<udf::RestoreResponse>;
 
-    fn begin_batch(&mut self, req: &udf::BeginBatch) -> Result<udf::BeginBatch>;
+    fn begin_batch(&mut self, req: &udf::BeginBatch) -> Result<()>;
 
     fn point(&mut self, req: &udf::Point, sender: mpsc::Sender<udf::Point>) -> Result<()>;
 

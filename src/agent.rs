@@ -64,8 +64,8 @@ impl Agent {
                     Ok(Some(response::Message::Restore(restore)))
                 },
                 request::Message::Begin(r) => {
-                    let begin_batch = self.handler.begin_batch(r)?;
-                    Ok(Some(response::Message::Begin(begin_batch)))
+                    self.handler.begin_batch(r)?;
+                    Ok(None)
                 },
                 request::Message::Point(r) => {
                     self.handler.point(r, self.points_tx.clone())?;
