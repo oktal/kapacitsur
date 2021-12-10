@@ -16,7 +16,7 @@ impl Shutdown {
         Shutdown {
             shutdown_rx,
             is_shutdown: false,
-            _complete
+            _complete,
         }
     }
 

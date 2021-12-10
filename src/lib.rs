@@ -1,8 +1,7 @@
 use tokio::net::UnixStream;
-use tokio::sync::mpsc;
 
-mod connection;
 pub mod agent;
+mod connection;
 pub mod shutdown;
 pub mod unix;
 
@@ -16,6 +15,10 @@ pub use shutdown::Shutdown;
 pub type Error = Box<dyn std::error::Error>;
 pub type Result<T> = std::result::Result<T, Error>;
 
+pub trait PointSender {
+    fn send(&mut self, point: udf::Point) -> Result<()>;
+}
+
 pub trait Handler: Send {
     fn info(&self) -> Result<udf::InfoResponse>;
 
@@ -27,7 +30,7 @@ pub trait Handler: Send {
 
     fn begin_batch(&mut self, req: udf::BeginBatch) -> Result<()>;
 
-    fn point(&mut self, point: udf::Point, sender: mpsc::Sender<udf::Point>) -> Result<()>;
+    fn point(&mut self, point: udf::Point, sender: &mut dyn PointSender) -> Result<()>;
 
     fn end_batch(&mut self, req: udf::EndBatch) -> Result<()>;
 }

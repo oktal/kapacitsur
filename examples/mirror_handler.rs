@@ -1,12 +1,12 @@
-use std::error::Error;
 use std::collections::HashMap;
+use std::error::Error;
 use std::vec::Vec;
 
 use kapacitsur::agent::Agent;
 use kapacitsur::udf;
 use kapacitsur::udf::option_value::Value;
 use kapacitsur::unix;
-use kapacitsur::{Acceptor, Handler, Result, Shutdown};
+use kapacitsur::{Acceptor, Handler, PointSender, Result, Shutdown};
 
 struct MirrorHandler {
     name: String,
@@ -15,14 +15,15 @@ struct MirrorHandler {
 
 impl Handler for MirrorHandler {
     fn info(&self) -> Result<udf::InfoResponse> {
-        Ok(udf::InfoResponse{
+        Ok(udf::InfoResponse {
             wants: udf::EdgeType::Stream.into(),
             provides: udf::EdgeType::Stream.into(),
-            options: HashMap::from([
-                ("field".to_string(), udf::OptionInfo{
-                    value_types: vec![udf::ValueType::String.into(), udf::ValueType::Double.into()]
-                })
-            ])
+            options: HashMap::from([(
+                "field".to_string(),
+                udf::OptionInfo {
+                    value_types: vec![udf::ValueType::String.into(), udf::ValueType::Double.into()],
+                },
+            )]),
         })
     }
 
@@ -34,54 +35,57 @@ impl Handler for MirrorHandler {
             .map(|x| (x.values.get(0), x.values.get(1)));
 
         Ok(match field {
-            None => udf::InitResponse{
+            None => udf::InitResponse {
                 success: false,
-                error: "Missing `field`".to_string()
+                error: "Missing `field`".to_string(),
             },
-            Some((Some(name), Some(value))) => {
-                match (name.value.as_ref(), value.value.as_ref()) {
-                    (Some(Value::StringValue(s)), Some(Value::DoubleValue(d))) => {
-                        self.name = s.clone();
-                        self.value = *d;
+            Some((Some(name), Some(value))) => match (name.value.as_ref(), value.value.as_ref()) {
+                (Some(Value::StringValue(s)), Some(Value::DoubleValue(d))) => {
+                    self.name = s.clone();
+                    self.value = *d;
 
-                        udf::InitResponse{
-                            success: true,
-                            error: String::new()
-                        }
-                    },
-                    _ => udf::InitResponse{
-                            success: false,
-                            error: "Invalid parameter type for `field`".to_string()
-                        }
+                    udf::InitResponse {
+                        success: true,
+                        error: String::new(),
+                    }
                 }
-            }
-            Some(_) => udf::InitResponse{
+                _ => udf::InitResponse {
+                    success: false,
+                    error: "Invalid parameter type for `field`".to_string(),
+                },
+            },
+            Some(_) => udf::InitResponse {
                 success: false,
-                error: "Missing parameter for `field`".to_string()
-            }
+                error: "Missing parameter for `field`".to_string(),
+            },
         })
     }
 
     fn snapshot(&mut self, _req: udf::SnapshotRequest) -> Result<udf::SnapshotResponse> {
-        Ok(udf::SnapshotResponse{snapshot: Vec::new()})
+        Ok(udf::SnapshotResponse {
+            snapshot: Vec::new(),
+        })
     }
 
     fn restore(&mut self, _req: udf::RestoreRequest) -> Result<udf::RestoreResponse> {
-        Ok(udf::RestoreResponse{success:true, error: String::new()})
+        Ok(udf::RestoreResponse {
+            success: true,
+            error: String::new(),
+        })
     }
 
     fn begin_batch(&mut self, _req: udf::BeginBatch) -> Result<()> {
         unimplemented!();
     }
 
-    fn point(&mut self, mut point: udf::Point, sender: tokio::sync::mpsc::Sender<udf::Point>) -> Result<()> {
+    fn point(&mut self, mut point: udf::Point, sender: &mut dyn PointSender) -> Result<()> {
         if let Some(val) = point.fields_double.get_mut(&self.name) {
             *val = self.value;
         } else {
             point.fields_double.insert(self.name.clone(), self.value);
         }
 
-        sender.try_send(point)?;
+        sender.send(point)?;
         Ok(())
     }
 
@@ -94,10 +98,16 @@ struct MirrorAcceptor;
 
 impl Acceptor for MirrorAcceptor {
     fn accept(&self, stream: tokio::net::UnixStream, shutdown: Shutdown) -> Result<Agent> {
-        Ok(Agent::new(stream, Box::new(MirrorHandler{ name: String::new(), value: 0.0 }),  shutdown))
+        Ok(Agent::new(
+            stream,
+            Box::new(MirrorHandler {
+                name: String::new(),
+                value: 0.0,
+            }),
+            shutdown,
+        ))
     }
 }
-
 
 #[tokio::main]
 async fn main() -> std::result::Result<(), Box<dyn Error>> {

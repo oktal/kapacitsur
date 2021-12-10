@@ -1,7 +1,7 @@
 use std::io;
 
 use bytes::{BufMut, BytesMut};
-use integer_encoding::{VarIntAsyncReader, VarInt};
+use integer_encoding::{VarInt, VarIntAsyncReader};
 use prost::Message;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::UnixStream;
@@ -18,7 +18,7 @@ pub(crate) struct Connection {
 
 impl Connection {
     pub(crate) fn new(stream: UnixStream) -> Connection {
-        Connection{
+        Connection {
             stream,
             encode_buf: BytesMut::with_capacity(128),
             rx_buf: BytesMut::with_capacity(128),
@@ -32,10 +32,11 @@ impl Connection {
 
         self.rx_buf.resize(size, 0u8);
         self.stream.read_exact(&mut self.rx_buf[..size]).await?;
-        udf::Request::decode(&mut io::Cursor::new(&self.rx_buf)).map_err(|e| e.into())
+
+        udf::Request::decode(&mut io::Cursor::new(&self.rx_buf[..size])).map_err(|e| e.into())
     }
 
-    pub(crate) async fn send_response(&mut self, response: &udf::response::Message) -> Result<()> {
+    pub(crate) async fn send_response(&mut self, response: udf::response::Message) -> Result<()> {
         self.encode_buf.clear();
 
         let mut buf = [0u8; 8];
@@ -50,4 +51,3 @@ impl Connection {
         Ok(())
     }
 }
-
