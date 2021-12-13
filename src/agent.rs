@@ -1,3 +1,4 @@
+use std::fmt;
 use std::ops::RangeBounds;
 use std::vec::{Drain, Vec};
 
@@ -6,6 +7,21 @@ use tokio::net::UnixStream;
 use crate::connection::Connection;
 use crate::udf::{self, request, response};
 use crate::{Handler, PointSender, Result, Shutdown};
+
+#[derive(Debug)]
+struct SendError;
+
+impl fmt::Display for SendError {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        write!(fmt, "{}", self)
+    }
+}
+
+impl std::error::Error for SendError {
+    fn description(&self) -> &str {
+        "channel is full"
+    }
+}
 
 struct Points(Vec<udf::Point>);
 
@@ -24,8 +40,12 @@ impl Points {
 
 impl PointSender for Points {
     fn send(&mut self, point: udf::Point) -> Result<()> {
-        self.0.push(point);
-        Ok(())
+        if self.0.len() < self.0.capacity() {
+            self.0.push(point);
+            Ok(())
+        } else {
+            Err(SendError.into())
+        }
     }
 }
 
